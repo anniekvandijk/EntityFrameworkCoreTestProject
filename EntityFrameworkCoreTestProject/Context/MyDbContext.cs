@@ -5,7 +5,6 @@ namespace EntityFrameworkCoreTestProject.Context
 {
     public class MyDbContext : DbContext
     {
-        public MyDbContext Context;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

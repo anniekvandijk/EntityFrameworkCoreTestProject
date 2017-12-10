@@ -1,5 +1,6 @@
+using System.Linq;
 using System.Net.Http.Headers;
-using EntityFrameworkCoreTestProject.Services;
+using EntityFrameworkCoreTestProject.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace EntityFrameworkCoreTestProject.Test
@@ -9,27 +10,67 @@ namespace EntityFrameworkCoreTestProject.Test
 
     {
         [TestMethod]
-        public void FindProducts()
+        public void GetProducts()
         {
-            var productService = new ProductService();
-            var result = productService.GetAllProducts();
-            Assert.AreEqual(7, result.Count);
+            UnitOfWork unitOfWork = new UnitOfWork();
+            var result = unitOfWork.ProductRepository.Get(product => product.ProductName != "test");
+            unitOfWork.Dispose();
+            Assert.AreEqual(7, result.Count());
         }
         [TestMethod]
-        public void FindProductsBycategory()
+        public void GetProductById()
         {
-            var productService = new ProductService();
-            var result = productService.GetProductsByCategory("novel");
-            Assert.AreEqual(2, result.Count);
+            UnitOfWork unitOfWork = new UnitOfWork();
+            var result = unitOfWork.ProductRepository.GetById(5L);
+            unitOfWork.Dispose();
+            Assert.AreEqual("King Stephen. 'Salem's Lot", result.ProductName);
         }
 
         [TestMethod]
         public void AddProduct()
         {
-            //var productService = new ProductService();
-            //var result = productService.AddProduct("test", category);
-            //Assert.IsTrue(result.ProductName.Equals("test"));
-            //Assert.IsTrue(result.Category.CategoryName.Equals("poetry"));
+            UnitOfWork unitOfWork = new UnitOfWork();
+            var productCategory = unitOfWork.ProductCategoryRepository.GetById(9L);
+
+            var product = new Product
+            {
+                ProductName = "test",
+                Category = productCategory
+            };
+            var result = unitOfWork.ProductRepository.Insert(product);
+            unitOfWork.Save();
+            unitOfWork.Dispose();
+            Assert.IsTrue(result.ProductName.Equals("test"));
+            Assert.IsTrue(result.Category.CategoryName.Equals("poetry"));
+        }
+
+        [TestMethod]
+        public void DeleteProduct()
+        {
+            UnitOfWork unitOfWork = new UnitOfWork();
+            var productCategory = unitOfWork.ProductCategoryRepository.GetById(9L);
+
+            var productAdd = new Product
+            {
+                ProductName = "deltest",
+                Category = productCategory
+            };
+            unitOfWork.ProductRepository.Insert(productAdd);
+            unitOfWork.Save();
+            unitOfWork.Dispose();
+
+            UnitOfWork unitOfWork2 = new UnitOfWork();
+            var result2 = unitOfWork2.ProductRepository.Get(product => product.ProductName == "deltest");
+            Assert.IsTrue(result2.Count().Equals(1));
+            foreach (var product in result2)
+            {
+                unitOfWork2.ProductRepository.Delete(product.Id);    
+            }
+            unitOfWork2.Save();
+            unitOfWork2.Dispose();
+            UnitOfWork unitOfWork3 = new UnitOfWork();
+            var result3 = unitOfWork3.ProductRepository.Get(product => product.ProductName == "deltest");
+            Assert.IsTrue(result3.Count().Equals(0));
         }
     }
 }
